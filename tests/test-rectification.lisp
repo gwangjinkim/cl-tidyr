@@ -44,6 +44,6 @@
               (y (elt ys i))
               (v (elt vals i)))
           (when (and (equal x "A") (= y 2))
-            (is (null v))
+            (is (na-p v))
             (setf found-missing t))))
       (is found-missing))))

@@ -21,7 +21,7 @@
                   for p-col in pivot-data-cols
                   do 
                   (let ((val (elt p-col i)))
-                    (unless (and values-drop-na (or (null val) (eq val :null)))
+                    (unless (and values-drop-na (is-missing-p val))
                       (vector-push-extend (string p-name) new-key-col)
                       (vector-push-extend val new-val-col)
                       (loop for id-col in id-data-cols
@@ -39,7 +39,7 @@
           (push new-val-col args)
           (apply #'cl-tibble:tibble (nreverse args)))))))
 
-(defun pivot-wider (data &key names-from values-from (values-fill nil))
+(defun pivot-wider (data &key names-from values-from (values-fill *na*))
   "Pivots data from long to wide."
   ;; 1. Identify columns
   (let* ((all-names (map 'list #'identity (cl-tibble:tbl-names data)))

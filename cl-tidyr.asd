@@ -15,8 +15,8 @@
                  (:file "string-verbs" :depends-on ("packages"))
                  (:file "pivoting" :depends-on ("packages" "string-verbs"))
                  (:file "missing-values" :depends-on ("packages"))
-                 (:file "rectification" :depends-on ("packages"))
-                 (:file "nesting" :depends-on ("packages"))
+                 (:file "rectification" :depends-on ("packages" "missing-values"))
+                 (:file "nesting" :depends-on ("packages" "missing-values"))
                  (:file "dsl" :depends-on ("packages")))))
   :in-order-to ((test-op (test-op "cl-tidyr/tests"))))
 

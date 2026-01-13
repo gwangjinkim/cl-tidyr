@@ -79,7 +79,7 @@
       ;; Check first non-nil nested element to get names
       (dotimes (i n-rows)
         (let ((sub-df (elt nested-col i)))
-          (when sub-df
+          (unless (is-missing-p sub-df)
             (incf total-rows (get-nrow sub-df))
             (unless nested-col-names
               (setf nested-col-names (map 'list #'identity (cl-tibble:tbl-names sub-df)))))))
@@ -91,7 +91,7 @@
         (let ((current-idx 0))
           (dotimes (i n-rows)
             (let ((sub-df (elt nested-col i)))
-              (when sub-df
+              (unless (is-missing-p sub-df)
                 (let ((n-sub (get-nrow sub-df)))
                   
                   ;; Copy repeated outer columns

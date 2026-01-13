@@ -1,5 +1,5 @@
 (defpackage #:cl-tidyr
-  (:use #:cl)
+  (:use #:cl #:cl-vctrs-lite)
   (:shadow #:fill)
   (:import-from #:cl-tibble
                 #:tibble

@@ -1,7 +1,7 @@
 (in-package #:cl-tidyr)
 
-(defun is-na (val)
-  (or (null val) (eq val :null)))
+(defun is-missing-p (val)
+  (or (null val) (na-p val)))
 
 (defun drop-na (data &rest cols)
   "Drops rows containing missing values in specified columns (or all if none specified)."
@@ -17,7 +17,7 @@
       (dotimes (i n)
         (let ((keep t))
           (dolist (vec col-vectors)
-             (when (is-na (elt vec i))
+             (when (is-missing-p (elt vec i))
                (setf keep nil)
                (return))) ;; Break inner loop
           (when keep
@@ -47,7 +47,7 @@
             (let ((new-vec (make-array n)))
               (dotimes (i n)
                 (let ((val (elt orig-col i)))
-                  (if (is-na val)
+                  (if (is-missing-p val)
                       (setf (aref new-vec i) replacement-val)
                       (setf (aref new-vec i) val))))
               (push key res-data)
@@ -78,10 +78,10 @@
                   (last-val nil))
               (dotimes (i n)
                 (let ((val (elt orig-col i)))
-                  (if (is-na val)
+                  (if (is-missing-p val)
                       (if last-val
                           (setf (aref new-vec i) last-val)
-                          (setf (aref new-vec i) val)) ;; If first is NA, keep NA
+                          (setf (aref new-vec i) *na*)) ;; Normalize to *na*
                       (progn
                         (setf last-val val)
                         (setf (aref new-vec i) val)))))

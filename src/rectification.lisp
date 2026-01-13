@@ -85,8 +85,8 @@
                       ;; Copy from original
                       (let ((orig-val (elt (cl-tibble:tbl-col data name) orig-idx)))
                         (setf (aref (elt res-vectors pos) i) orig-val))
-                      ;; Else nil
-                      (setf (aref (elt res-vectors pos) i) nil))))))
+                      ;; Else *na*
+                      (setf (aref (elt res-vectors pos) i) *na*))))))
       
       ;; 3. Tibble
       (let ((args (list)))
