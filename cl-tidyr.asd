@@ -16,6 +16,7 @@
                  (:file "pivoting" :depends-on ("packages" "string-verbs"))
                  (:file "missing-values" :depends-on ("packages"))
                  (:file "rectification" :depends-on ("packages"))
+                 (:file "nesting" :depends-on ("packages"))
                  (:file "dsl" :depends-on ("packages")))))
   :in-order-to ((test-op (test-op "cl-tidyr/tests"))))
 
@@ -31,5 +32,6 @@
                  (:file "test-pivot-wider" :depends-on ("packages" "main"))
                  (:file "test-missing-values" :depends-on ("packages" "main"))
                  (:file "test-rectification" :depends-on ("packages" "main"))
+                 (:file "test-nesting" :depends-on ("packages" "main"))
                  (:file "test-dsl" :depends-on ("packages" "main")))))
   :perform (test-op (o c) (symbol-call :fiveam :run! :cl-tidyr)))

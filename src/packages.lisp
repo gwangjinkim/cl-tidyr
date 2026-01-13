@@ -18,4 +18,6 @@
            #:fill
            #:expand
            #:complete
+           #:nest
+           #:unnest
            #:tidy))
