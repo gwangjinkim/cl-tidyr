@@ -2,7 +2,10 @@
   (:use #:cl)
   (:import-from #:cl-tibble
                 #:tibble
-                #:as-tibble)
+                #:as-tibble
+                #:tbl-names
+                #:tbl-col
+                #:bind-cols)
   (:import-from #:cl-dplyr
                 #:select)
   (:export #:unite

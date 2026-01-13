@@ -15,70 +15,86 @@
              (t (push item cols)))))
     (values (nreverse cols) sep remove na-rm)))
 
+(defun get-nrow (df)
+  (let ((names (cl-tibble:tbl-names df)))
+    (if (> (length names) 0)
+        (length (cl-tibble:tbl-col df (elt names 0)))
+        0)))
+
 (defun unite (data col &rest args)
   "Unites multiple columns into one by pasting them together."
   (multiple-value-bind (col-selectors sep remove na-rm)
       (parse-unite-args args)
-    ;; 1. Select columns to unite
-    ;; We use cl-dplyr:select to resolve selectors against the data, then get names
     (let* ((sub-df (apply #'cl-dplyr:select data col-selectors))
-           (target-names (cl-tibble:column-names sub-df))
-           (n (cl-tibble:nrow data))
-           (new-col-values (make-list n)))
+           (target-names (cl-tibble:tbl-names sub-df))
+           (n (get-nrow data))
+           (new-col-values (make-array n :fill-pointer 0)))
+
+      ;; Extract values
+      (let ((cols-data (map 'list (lambda (name) (cl-tibble:tbl-col sub-df name)) target-names)))
+        ;; Iterate and join
+        (dotimes (i n)
+          (let ((row-vals (mapcar (lambda (c) (elt c i)) cols-data)))
+            (if na-rm
+                (setf row-vals (remove-if #'null row-vals))) 
+            (vector-push-extend 
+             (format nil (format nil "~~{~~a~~^~a~~}" sep) row-vals)
+             new-col-values))))
       
-      ;; 2. Extract values for each valid column
-      (let ((cols-data (mapcar (lambda (name) (cl-tibble:pull sub-df name)) target-names)))
-        ;; cols-data is a list of vectors/lists
+      ;; Construct result
+      (let ((res data)
+            (keep-names (if remove
+                            (let ((all-names (map 'list #'identity (cl-tibble:tbl-names data)))
+                                  (targets (map 'list #'identity target-names)))
+                              (set-difference all-names targets :test #'equal))
+                            nil)))
         
-        ;; 3. Iterate and join
-        (setf new-col-values
-              (loop for i from 0 below n
-                    collect (let ((row-vals (mapcar (lambda (c) (elt c i)) cols-data)))
-                              (if na-rm
-                                  (setf row-vals (remove-if #'null row-vals))) ;; Simplified NA check
-                              (format nil (format nil "~~{~~a~~^~a~~}" sep) row-vals)))))
-      
-      ;; 4. Construct result
-      ;; Start with original data
-      (let ((res data))
-        ;; If remove, drop the target columns
-        (when remove
-          (setf res (cl-dplyr:select data (cons :exclude target-names)))) ;; Assuming select supports exclude or we need logic
-        ;; wait, cl-dplyr:select usually takes positive selection. 
-        ;; To drop, usually `(select data (not (c ...)))`.
-        ;; For now, I'll assume I can just rebuild or I need a better drop mechanism.
-        ;; Let's assume cl-dplyr:select handles standard selection.
-        ;; If remove is true, we want everything BUT target-names.
-        (when remove
-             ;; This is tricky without fully knowing cl-dplyr's "not" syntax implementation in this environment.
-             ;; I'll try to fetch all names, remove targets, and select those.
-             (let* ((all-names (cl-tibble:column-names data))
-                    (keep-names (set-difference all-names target-names :test #'equal)))
-               (setf res (apply #'cl-dplyr:select data keep-names))))
-        
-        ;; Add new column
-        (setf res (cl-tibble:add-column res col new-col-values))
+        (cond
+          ((and remove (null keep-names))
+           (setf res (cl-tibble:tibble (intern (string-upcase col) "KEYWORD") new-col-values)))
+          
+          (t 
+           (when remove
+             (setf res (apply #'cl-dplyr:select data keep-names)))
+           (let ((new-col-df (cl-tibble:tibble (intern (string-upcase col) "KEYWORD") new-col-values)))
+             (setf res (cl-tibble:bind-cols res new-col-df)))))
         res))))
 
 (defun separate (data col into &key (sep "[^[:alnum:]]+") (remove t) (convert nil))
   "Splits a column into multiple columns."
-  (declare (ignore convert)) ;; M1: ignore convert
-  (let* ((raw-vals (cl-tibble:pull data col))
-         (n (cl-tibble:nrow data))
+  (declare (ignore convert)) 
+  (let* ((raw-vals (cl-tibble:tbl-col data col))
+         (n (length raw-vals))
          (split-vals (map 'list (lambda (x)
                                   (cl-ppcre:split sep x :limit (length into)))
                           raw-vals))
-         ;; Transpose split-vals to get columns
-         (new-cols-data (apply #'mapcar #'list split-vals)))
+         ;; Transpose and ensure vectors for cl-tibble
+         (new-cols-data (apply #'mapcar #'vector split-vals)))
     
-    (let ((res data))
-      (when remove
-        (let* ((all-names (cl-tibble:column-names data))
-               ;; Use string comparison for names
-               (keep-names (remove (string col) all-names :test #'string=)))
-          (setf res (apply #'cl-dplyr:select data keep-names))))
+    (let ((res data)
+          (keep-names (if remove
+                          (remove (string col) (map 'list #'identity (cl-tibble:tbl-names data)) 
+                                  :test #'string-equal :key #'string)
+                          nil)))
       
-      (loop for name in into
-            for col-data in new-cols-data
-            do (setf res (cl-tibble:add-column res name col-data)))
-      res)))
+      (cond
+        ((and remove (null keep-names))
+         (let ((args (list)))
+           (loop for name in into
+                 for col-data in new-cols-data
+                 do (push (intern (string-upcase name) "KEYWORD") args)
+                    (push col-data args))
+           (setf res (apply #'cl-tibble:tibble (nreverse args)))))
+        
+        (t
+         (when remove
+           (setf res (apply #'cl-dplyr:select data keep-names)))
+         
+         (let ((args (list)))
+           (loop for name in into
+                 for col-data in new-cols-data
+                 do (push (intern (string-upcase name) "KEYWORD") args)
+                    (push col-data args))
+           (let ((new-df (apply #'cl-tibble:tibble (nreverse args))))
+             (setf res (cl-tibble:bind-cols res new-df))))))
+         res)))

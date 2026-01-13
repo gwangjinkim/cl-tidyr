@@ -28,4 +28,9 @@
 ;; Inspect TBL-COL signature
 (format t "Arglist of TBL-COL: ~a~%" (sb-introspect:function-lambda-list #'cl-tibble:tbl-col))
 
+;; Check ADD-COLUMN
+(format t "ADD-COLUMN bound: ~a~%" (fboundp 'cl-tibble:add-column))
+(if (fboundp 'cl-tibble:add-column)
+    (format t "Arglist of ADD-COLUMN: ~a~%" (sb-introspect:function-lambda-list #'cl-tibble:add-column)))
+
 (uiop:quit 0)
