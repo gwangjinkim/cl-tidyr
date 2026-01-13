@@ -14,7 +14,8 @@
                 ((:file "packages")
                  (:file "string-verbs" :depends-on ("packages"))
                  (:file "pivoting" :depends-on ("packages" "string-verbs"))
-                 (:file "missing-values" :depends-on ("packages")))))
+                 (:file "missing-values" :depends-on ("packages"))
+                 (:file "rectification" :depends-on ("packages")))))
   :in-order-to ((test-op (test-op "cl-tidyr/tests"))))
 
 (defsystem "cl-tidyr/tests"
@@ -27,5 +28,6 @@
                  (:file "test-string-verbs" :depends-on ("packages" "main"))
                  (:file "test-pivoting" :depends-on ("packages" "main"))
                  (:file "test-pivot-wider" :depends-on ("packages" "main"))
-                 (:file "test-missing-values" :depends-on ("packages" "main")))))
+                 (:file "test-missing-values" :depends-on ("packages" "main"))
+                 (:file "test-rectification" :depends-on ("packages" "main")))))
   :perform (test-op (o c) (symbol-call :fiveam :run! :cl-tidyr)))
