@@ -24,5 +24,6 @@
                 ((:file "packages")
                  (:file "main" :depends-on ("packages"))
                  (:file "test-string-verbs" :depends-on ("packages" "main"))
-                 (:file "test-pivoting" :depends-on ("packages" "main")))))
+                 (:file "test-pivoting" :depends-on ("packages" "main"))
+                 (:file "test-pivot-wider" :depends-on ("packages" "main")))))
   :perform (test-op (o c) (symbol-call :fiveam :run! :cl-tidyr)))
