@@ -12,7 +12,8 @@
   :components ((:module "src"
                 :components
                 ((:file "packages")
-                 (:file "string-verbs" :depends-on ("packages")))))
+                 (:file "string-verbs" :depends-on ("packages"))
+                 (:file "pivoting" :depends-on ("packages" "string-verbs")))))
   :in-order-to ((test-op (test-op "cl-tidyr/tests"))))
 
 (defsystem "cl-tidyr/tests"
@@ -22,5 +23,6 @@
                 :components
                 ((:file "packages")
                  (:file "main" :depends-on ("packages"))
-                 (:file "test-string-verbs" :depends-on ("packages" "main")))))
+                 (:file "test-string-verbs" :depends-on ("packages" "main"))
+                 (:file "test-pivoting" :depends-on ("packages" "main")))))
   :perform (test-op (o c) (symbol-call :fiveam :run! :cl-tidyr)))
