@@ -4,7 +4,7 @@
 (require 'sb-introspect)
 
 (let* ((root (uiop:getcwd))
-       (asd  (merge-pathnames "cl-dplyr.asd" root)))
+       (asd  (merge-pathnames "cl-tidyr.asd" root)))
   (asdf:load-asd asd))
 
 (ql:quickload :cl-tibble)

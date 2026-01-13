@@ -4,15 +4,15 @@
 
 ;; Load local .asd from repo root
 (let* ((root (uiop:getcwd))
-       (asd  (merge-pathnames "cl-dplyr.asd" root)))
+       (asd  (merge-pathnames "cl-tidyr.asd" root)))
   (asdf:load-asd asd))
 
-(format t "~&[cl-dplyr] running tests...~%")
+(format t "~&[cl-tidyr] running tests...~%")
 
 (handler-case
     (progn
       ;; IMPORTANT: test-system (not load-system) so :perform test-op runs
-      (asdf:test-system :cl-dplyr)
+      (asdf:test-system :cl-tidyr)
       (format t "~&OK~%")
       (uiop:quit 0))
   (error (e)
