@@ -1,5 +1,6 @@
 (defpackage #:cl-tidyr
   (:use #:cl)
+  (:shadow #:fill)
   (:import-from #:cl-tibble
                 #:tibble
                 #:as-tibble
