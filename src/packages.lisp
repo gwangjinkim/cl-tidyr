@@ -17,4 +17,5 @@
            #:replace-na
            #:fill
            #:expand
-           #:complete))
+           #:complete
+           #:tidy))
