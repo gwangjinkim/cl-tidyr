@@ -1,0 +1,31 @@
+#!/usr/bin/env ros
+;; -*- mode: lisp; -*-
+(require :asdf)
+(require 'sb-introspect)
+
+(let* ((root (uiop:getcwd))
+       (asd  (merge-pathnames "cl-dplyr.asd" root)))
+  (asdf:load-asd asd))
+
+(ql:quickload :cl-tibble)
+
+;; Inspect TIBBLE class
+(let ((df (cl-tibble:tibble :a 1 :B 2)))
+  (format t "Class of tibble instance: ~a~%" (class-name (class-of df)))
+  (let ((names (cl-tibble:tbl-names df)))
+    (format t "tbl-names type: ~a~%" (type-of names))
+    (format t "tbl-names content: ~a~%" names)))
+
+
+;; Inspect SLICE signature
+
+;; Inspect SLICE signature
+(format t "Arglist of SLICE: ~a~%" (sb-introspect:function-lambda-list #'cl-tibble:slice))
+
+;; Inspect BIND-COLS signature
+(format t "Arglist of BIND-COLS: ~a~%" (sb-introspect:function-lambda-list #'cl-tibble:bind-cols))
+
+;; Inspect TBL-COL signature
+(format t "Arglist of TBL-COL: ~a~%" (sb-introspect:function-lambda-list #'cl-tibble:tbl-col))
+
+(uiop:quit 0)

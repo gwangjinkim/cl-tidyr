@@ -1,0 +1,14 @@
+#!/usr/bin/env ros
+;; -*- mode: lisp; -*-
+(require :asdf)
+
+(let* ((root (uiop:getcwd))
+       (asd  (merge-pathnames "cl-dplyr.asd" root)))
+  (asdf:load-asd asd))
+
+(ql:quickload :cl-tibble)
+
+(format t "~&Exports of CL-TIBBLE:~%")
+(do-external-symbols (s (find-package :cl-tibble))
+  (format t "~S~%" s))
+(uiop:quit 0)
