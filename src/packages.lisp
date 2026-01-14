@@ -1,5 +1,6 @@
 (defpackage #:cl-tidyr
   (:use #:cl #:cl-vctrs-lite)
+  (:nicknames #:tidyr")
   (:shadow #:fill)
   (:import-from #:cl-tibble
                 #:tibble
