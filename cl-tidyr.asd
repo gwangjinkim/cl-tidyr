@@ -1,6 +1,6 @@
 (defsystem "cl-tidyr"
   :version "0.1.0"
-  :author "Antigravity"
+  :author "Gwang-Jin Kim <gwang.jin.kim.phd@gmail.com>"
   :license "MIT"
   :description "Tidy data reshaping for Common Lisp"
   :depends-on (:cl-tibble
