@@ -4,7 +4,6 @@
   :license "MIT"
   :description "Tidy data reshaping for Common Lisp"
   :depends-on (:cl-tibble
-               :cl-dplyr
                :cl-vctrs-lite
                :cl-ppcre
                :alexandria

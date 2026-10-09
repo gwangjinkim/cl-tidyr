@@ -2,7 +2,7 @@
 
 (defun pivot-longer (data cols &key (names-to "name") (values-to "value") (values-drop-na nil))
   "Pivots data from wide to long."
-  (let* ((pivot-df (apply #'cl-dplyr:select data cols))
+  (let* ((pivot-df (select-cols data cols))
          (pivot-names (map 'list #'identity (cl-tibble:tbl-names pivot-df))) 
          (n-rows (get-nrow data)))
     

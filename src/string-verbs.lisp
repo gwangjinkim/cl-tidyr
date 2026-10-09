@@ -1,5 +1,13 @@
 (in-package #:cl-tidyr)
 
+(defun select-cols (data cols)
+  "Columns COLS (names or keywords) of DATA, in that order, as a new tibble.
+Uses cl-tibble directly so cl-tidyr does not depend on cl-dplyr."
+  (if cols
+      (cl-tibble:slice data :cols cols)
+      (cl-tibble:tibble)))
+
+
 (defun parse-unite-args (args)
   "Separates columns from keyword options for unite."
   (let ((sep "_")
@@ -25,7 +33,7 @@
   "Unites multiple columns into one by pasting them together."
   (multiple-value-bind (col-selectors sep remove na-rm)
       (parse-unite-args args)
-    (let* ((sub-df (apply #'cl-dplyr:select data col-selectors))
+    (let* ((sub-df (select-cols data col-selectors))
            (target-names (cl-tibble:tbl-names sub-df))
            (n (get-nrow data))
            (new-col-values (make-array n :fill-pointer 0)))
@@ -55,7 +63,7 @@
           
           (t 
            (when remove
-             (setf res (apply #'cl-dplyr:select data keep-names)))
+             (setf res (select-cols data keep-names)))
            (let ((new-col-df (cl-tibble:tibble (intern (string-upcase col) "KEYWORD") new-col-values)))
              (setf res (cl-tibble:bind-cols res new-col-df)))))
         res))))
@@ -88,7 +96,7 @@
         
         (t
          (when remove
-           (setf res (apply #'cl-dplyr:select data keep-names)))
+           (setf res (select-cols data keep-names)))
          
          (let ((args (list)))
            (loop for name in into

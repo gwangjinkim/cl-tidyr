@@ -8,8 +8,6 @@
                 #:tbl-names
                 #:tbl-col
                 #:bind-cols)
-  (:import-from #:cl-dplyr
-                #:select)
   (:export #:unite
            #:separate
            #:pivot-longer
