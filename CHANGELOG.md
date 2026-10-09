@@ -7,6 +7,10 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- Re-export the shared `cl-tidyselect` TS1 helpers. `pivot-longer` and
+  `unite` can use helper thunks evaluated in the input column context;
+  explicit names and zero-based index lists continue to work
+  (topic: parity-TS1-adapters).
 - `fill` on a non-tibble behaves exactly like `cl:fill`. cl-tidyr's `fill`
   shadows `cl:fill`, so in any package using cl-tidyr (or cl-tidyverse)
   `(fill (make-list 3) 0)` used to be misread as a tibble fill; now the
@@ -31,6 +35,11 @@ All notable changes to this project are documented here. Format follows
   it now drops both.
 
 ### Changed
+- The existing internal column selector now uses `cl-tidyselect`, preserves
+  typed columns and empty-schema row counts, and consumes the same helper
+  indices as dplyr. Renaming selectors signal a shared selection error, matching
+  R's reshape contract. Full selection expressions remain TS2;
+  reshape parity remains TR1–TR5 (topic: parity-TS1-adapters).
 - AGENTS.md: "Parity work" section listing this repository's parity
   milestones (TR1, TR2, TR3, TR4, TR5) and where the plan and backlog live
   (topic: parity plan).
@@ -41,6 +50,9 @@ All notable changes to this project are documented here. Format follows
   remain in history (topic: repo hygiene).
 
 ### Tests
+- New helper-based pivot/unite, empty schema, positional order, missing-name
+  validation, prohibited renaming, and shared-symbol regressions. Full umbrella
+  package suite: 90/90 checks (65 before; 25 added) (topic: parity-TS1-adapters).
 - `complete-basic`: replaced bare `(is found-missing)` (rejected by current
   FiveAM at macroexpansion) with `(is-true found-missing)`. Suite 56/56.
 - 3 new tests in `tests/test-string-verbs.lisp` for separate/unite.

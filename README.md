@@ -92,6 +92,33 @@ Using the `tidy` macro, you can chain operations together elegantly:
 
 ---
 
+## Shared selection helpers (TS1)
+
+`cl-tidyr` re-exports the same `cl-tidyselect` helper symbols used by
+`cl-dplyr`: `starts-with`, `ends-with`, `contains`, `matches`, `num-range`,
+`everything`, `last-col`, `all-of`, `any-of`, `one-of`, `where`, and
+`vars-select-helpers`. The selection layer used by `pivot-longer` and `unite`
+resolves names, zero-based positions, ordered unions, and exclusions.
+
+These verbs are ordinary functions, so a helper needing column context is
+passed as a zero-argument function. The verb calls it inside the data's
+selection context:
+
+```lisp
+(cl-tidyr:pivot-longer df (lambda () (cl-tidyr:starts-with "x")))
+(cl-tidyr:unite df "joined" (lambda () (cl-tidyr:starts-with "x")) :sep "_")
+(cl-tidyr:pivot-longer df
+  (lambda () (cl-tidyr:where
+    (lambda (column) (eq :int (cl-vctrs-lite:col-type column))))))
+;; Existing explicit column lists still work:
+(cl-tidyr:pivot-longer df '("x_a" "x_b"))
+```
+
+The internal selector preserves types and the input row count even for
+empty schemas. Named selector renaming is rejected in these reshape contexts,
+matching R. The full selection expression engine remains TS2.
+The reshaping algorithms' remaining parity work stays in TR1–TR5.
+
 ## Missing Value Standards (NA)
 
 `cl-tidyr` is built on `cl-vctrs-lite`. To ensure robust performance:
@@ -127,7 +154,8 @@ Using the `tidy` macro, you can chain operations together elegantly:
 (ql:quickload :cl-tidyr)
 ```
 
-Requires: `cl-tibble`, `cl-dplyr`, `cl-vctrs-lite`.
+Requires: `cl-tibble`, `cl-tidyselect`, `cl-vctrs-lite`, `cl-ppcre`,
+`alexandria`, and `serapeum`.
 
 ## License
 

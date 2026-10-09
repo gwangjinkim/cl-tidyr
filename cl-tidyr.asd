@@ -3,7 +3,8 @@
   :author "Gwang-Jin Kim <gwang.jin.kim.phd@gmail.com>"
   :license "MIT"
   :description "Tidy data reshaping for Common Lisp"
-  :depends-on (:cl-tibble
+  :depends-on (:cl-tidyselect
+               :cl-tibble
                :cl-vctrs-lite
                :cl-ppcre
                :alexandria
@@ -32,5 +33,6 @@
                  (:file "test-missing-values" :depends-on ("packages" "main"))
                  (:file "test-rectification" :depends-on ("packages" "main"))
                  (:file "test-nesting" :depends-on ("packages" "main"))
-                 (:file "test-dsl" :depends-on ("packages" "main")))))
+                 (:file "test-dsl" :depends-on ("packages" "main"))
+                 (:file "test-tidyselect" :depends-on ("packages" "main")))))
   :perform (test-op (o c) (symbol-call :fiveam :run! :cl-tidyr)))

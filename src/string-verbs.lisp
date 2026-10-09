@@ -1,11 +1,27 @@
 (in-package #:cl-tidyr)
 
 (defun select-cols (data cols)
-  "Columns COLS (names or keywords) of DATA, in that order, as a new tibble.
-Uses cl-tibble directly so cl-tidyr does not depend on cl-dplyr."
-  (if cols
-      (cl-tibble:slice data :cols cols)
-      (cl-tibble:tibble)))
+  "Select columns with shared tidyselect rules, preserving empty schemas.
+For a helper requiring context, pass a zero-argument function that calls it."
+  (cl-tidyselect:with-selection-context
+      ((cl-tibble:tbl-names data)
+       (map 'list (lambda (name) (cl-tibble:tbl-col data name))
+            (cl-tibble:tbl-names data)))
+    (let* ((selectors (if (listp cols) cols (list cols)))
+           (evaluated (mapcar (lambda (selector)
+                               (if (functionp selector) (funcall selector) selector))
+                             selectors)))
+      (multiple-value-bind (indices names) (cl-tidyselect:selection-indices evaluated)
+        ;; tidyr's pivot/unite contexts use tidyselect allow_rename = FALSE.
+        (loop for index across indices for name across names
+              unless (string= name (aref (cl-tibble:tbl-names data) index))
+                do (error 'cl-tidyselect:tidyselect-error
+                          :message "Can't rename variables in this context."))
+        (let ((columns (make-hash-table :test 'equal)))
+          (loop for index across indices for name across names
+                do (setf (gethash name columns) (cl-tibble:tbl-col data index)))
+          (make-instance 'cl-tibble:tbl :columns columns :names names
+                         :nrows (cl-tibble:tbl-nrows data)))))))
 
 
 (defun parse-unite-args (args)
