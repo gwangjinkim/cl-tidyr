@@ -24,6 +24,13 @@ All notable changes to this project are documented here. Format follows
 - `unite :na-rm t` only dropped `NIL`, not `*na*`, producing `"NA_q"`;
   it now drops both.
 
+### Changed
+- Stopped tracking `build/` (219 files, 5.4M): the ASDF/Roswell compile
+  cache that `make test` writes via `XDG_CACHE_HOME=$(PWD)/build`. It held
+  compiled fasls, including Quicklisp internals and absolute local paths.
+  `build/` is now in `.gitignore`; local files are untouched. Old copies
+  remain in history (topic: repo hygiene).
+
 ### Tests
 - `complete-basic`: replaced bare `(is found-missing)` (rejected by current
   FiveAM at macroexpansion) with `(is-true found-missing)`. Suite 56/56.
