@@ -31,6 +31,9 @@ All notable changes to this project are documented here. Format follows
   it now drops both.
 
 ### Changed
+- AGENTS.md: "Parity work" section listing this repository's parity
+  milestones (TR1, TR2, TR3, TR4, TR5) and where the plan and backlog live
+  (topic: parity plan).
 - Stopped tracking `build/` (219 files, 5.4M): the ASDF/Roswell compile
   cache that `make test` writes via `XDG_CACHE_HOME=$(PWD)/build`. It held
   compiled fasls, including Quicklisp internals and absolute local paths.
