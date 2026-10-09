@@ -47,3 +47,8 @@
       (is (= 1 (elt xs 1))) ;; Filled
       (is (= 1 (elt xs 2))) ;; Filled
       (is (= 4 (elt xs 3))))))
+
+(test fill-on-sequences-behaves-like-cl-fill
+  "cl-tidyr:fill shadows cl:fill; on plain sequences it must be cl:fill."
+  (is (equal '(0 0 0) (fill (list 1 2 3) 0)))
+  (is (equalp #(1 9 9) (fill (vector 1 2 3) 9 :start 1))))

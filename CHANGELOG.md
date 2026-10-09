@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+- `fill` on a non-tibble behaves exactly like `cl:fill`. cl-tidyr's `fill`
+  shadows `cl:fill`, so in any package using cl-tidyr (or cl-tidyverse)
+  `(fill (make-list 3) 0)` used to be misread as a tibble fill; now the
+  shadowing is transparent (topic: CL shadowing).
+
 ### Fixed
 - **cl-tidyr did not load at all**: `no symbol named "SELECT" in
   "CL-DPLYR"`. cl-dplyr renamed its verbs to `.select` etc. (cl-dplyr
@@ -36,3 +42,4 @@ All notable changes to this project are documented here. Format follows
   FiveAM at macroexpansion) with `(is-true found-missing)`. Suite 56/56.
 - 3 new tests in `tests/test-string-verbs.lisp` for separate/unite.
   Suite 63/63.
+- New `fill-on-sequences-behaves-like-cl-fill`. Suite 65/65.

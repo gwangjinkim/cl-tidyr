@@ -55,7 +55,17 @@
     
     (apply #'cl-tibble:tibble (nreverse res-data))))
 
-(defun fill (data col &key (direction :down))
+(defun fill (data col &rest args)
+  "Fill missing values in column COL of tibble DATA from neighbouring rows.
+   (fill data col :direction :down)  ; :up is not implemented yet
+   FILL shadows CL:FILL; when DATA is not a tibble, this is CL:FILL
+   (sequence item &key start end), so (fill (make-list 3) 0) still works."
+  (if (typep data 'cl-tibble:tbl)
+      (destructuring-bind (&key (direction :down)) args
+        (fill-tibble data col :direction direction))
+      (apply #'cl:fill data col args)))
+
+(defun fill-tibble (data col &key (direction :down))
   "Fills missing values with previous/next values. Currently only :down supported."
   (unless (eq direction :down)
     (error "Only :down direction is currently implemented"))
