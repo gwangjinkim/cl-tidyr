@@ -13,7 +13,19 @@ All notable changes to this project are documented here. Format follows
   cl-tidyr now selects columns with `cl-tibble:slice` via an internal
   `select-cols`, and **no longer depends on cl-dplyr** at all, so renames
   there cannot break it again (topic: decouple from cl-dplyr).
+- **`separate` silently dropped columns**: with `into '("x" "y")`, one
+  row having fewer pieces (e.g. `"c"` next to `"a-b"`) removed column `y`
+  for *all* rows, because the transpose `(apply #'mapcar #'vector rows)`
+  stops at the shortest row. Rows are now padded to `(length into)` with
+  NA (tidyr's `fill = "right"`) (topic: separate/unite).
+- `separate` signalled a type error on NA cells; NA now yields NA pieces.
+- `unite` reordered the remaining columns (`set-difference`); order is now
+  preserved, with the united column appended.
+- `unite :na-rm t` only dropped `NIL`, not `*na*`, producing `"NA_q"`;
+  it now drops both.
 
 ### Tests
 - `complete-basic`: replaced bare `(is found-missing)` (rejected by current
   FiveAM at macroexpansion) with `(is-true found-missing)`. Suite 56/56.
+- 3 new tests in `tests/test-string-verbs.lisp` for separate/unite.
+  Suite 63/63.

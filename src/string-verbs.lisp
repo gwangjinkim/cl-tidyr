@@ -44,7 +44,7 @@ Uses cl-tibble directly so cl-tidyr does not depend on cl-dplyr."
         (dotimes (i n)
           (let ((row-vals (mapcar (lambda (c) (elt c i)) cols-data)))
             (if na-rm
-                (setf row-vals (remove-if #'null row-vals))) 
+                (setf row-vals (remove-if (lambda (v) (or (null v) (na-p v))) row-vals)))
             (vector-push-extend 
              (format nil (format nil "~~{~~a~~^~a~~}" sep) row-vals)
              new-col-values))))
@@ -54,7 +54,10 @@ Uses cl-tibble directly so cl-tidyr does not depend on cl-dplyr."
             (keep-names (if remove
                             (let ((all-names (map 'list #'identity (cl-tibble:tbl-names data)))
                                   (targets (map 'list #'identity target-names)))
-                              (set-difference all-names targets :test #'equal))
+                              ;; REMOVE-IF keeps the original column order
+                              ;; (SET-DIFFERENCE did not).
+                              (remove-if (lambda (n) (member n targets :test #'equal))
+                                         all-names))
                             nil)))
         
         (cond
@@ -73,11 +76,22 @@ Uses cl-tibble directly so cl-tidyr does not depend on cl-dplyr."
   (declare (ignore convert)) 
   (let* ((raw-vals (cl-tibble:tbl-col data col))
          (n (length raw-vals))
+         (k (length into))
+         ;; One list of exactly K pieces per row: NA input gives K NAs,
+         ;; missing pieces are padded with NA (as tidyr's fill = "right").
          (split-vals (map 'list (lambda (x)
-                                  (cl-ppcre:split sep x :limit (length into)))
+                                  (if (or (null x) (na-p x))
+                                      (make-list k :initial-element *na*)
+                                      (let ((pieces (cl-ppcre:split sep x :limit k)))
+                                        (append pieces
+                                                (make-list (max 0 (- k (length pieces)))
+                                                           :initial-element *na*)))))
                           raw-vals))
-         ;; Transpose and ensure vectors for cl-tibble
-         (new-cols-data (apply #'mapcar #'vector split-vals)))
+         ;; Transpose into one vector per new column. Every row has K pieces,
+         ;; so MAPCAR no longer truncates to the shortest row.
+         (new-cols-data (if split-vals
+                            (apply #'mapcar #'vector split-vals)
+                            (make-list k :initial-element (vector)))))
     
     (let ((res data)
           (keep-names (if remove
