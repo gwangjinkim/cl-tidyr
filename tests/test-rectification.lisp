@@ -46,4 +46,4 @@
           (when (and (equal x "A") (= y 2))
             (is (na-p v))
             (setf found-missing t))))
-      (is found-missing))))
+      (is-true found-missing))))

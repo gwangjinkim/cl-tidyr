@@ -13,3 +13,7 @@ All notable changes to this project are documented here. Format follows
   cl-tidyr now selects columns with `cl-tibble:slice` via an internal
   `select-cols`, and **no longer depends on cl-dplyr** at all, so renames
   there cannot break it again (topic: decouple from cl-dplyr).
+
+### Tests
+- `complete-basic`: replaced bare `(is found-missing)` (rejected by current
+  FiveAM at macroexpansion) with `(is-true found-missing)`. Suite 56/56.
