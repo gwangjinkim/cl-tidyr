@@ -7,6 +7,9 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- `parity-TS2-adapters`: pivot/unite selection accepts quoted native
+  operator and helper expressions, alone or in established selector lists.
+
 - Re-export the shared `cl-tidyselect` TS1 helpers. `pivot-longer` and
   `unite` can use helper thunks evaluated in the input column context;
   explicit names and zero-based index lists continue to work
@@ -35,6 +38,9 @@ All notable changes to this project are documented here. Format follows
   it now drops both.
 
 ### Changed
+- `parity-TS2-adapters`: selection predicates receive the actual frame
+  context through the shared engine; reshape renaming remains an error.
+
 - The existing internal column selector now uses `cl-tidyselect`, preserves
   typed columns and empty-schema row counts, and consumes the same helper
   indices as dplyr. Renaming selectors signal a shared selection error, matching
@@ -50,6 +56,9 @@ All notable changes to this project are documented here. Format follows
   remain in history (topic: repo hygiene).
 
 ### Tests
+- `parity-TS2-adapters`: R comparisons and integration regressions cover
+  quoted ranges/helpers, owner preservation and prohibited aliases.
+
 - New helper-based pivot/unite, empty schema, positional order, missing-name
   validation, prohibited renaming, and shared-symbol regressions. Full umbrella
   package suite: 90/90 checks (65 before; 25 added) (topic: parity-TS1-adapters).

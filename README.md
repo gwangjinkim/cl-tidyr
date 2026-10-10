@@ -92,7 +92,7 @@ Using the `tidy` macro, you can chain operations together elegantly:
 
 ---
 
-## Shared selection helpers (TS1)
+## Shared selection helpers and expressions (TS1 / TS2)
 
 `cl-tidyr` re-exports the same `cl-tidyselect` helper symbols used by
 `cl-dplyr`: `starts-with`, `ends-with`, `contains`, `matches`, `num-range`,
@@ -116,7 +116,7 @@ selection context:
 
 The internal selector preserves types and the input row count even for
 empty schemas. Named selector renaming is rejected in these reshape contexts,
-matching R. The full selection expression engine remains TS2.
+matching R. The shared TS2 engine also accepts quoted operator/helper forms.
 The reshaping algorithms' remaining parity work stays in TR1–TR5.
 
 ## Missing Value Standards (NA)
@@ -160,3 +160,10 @@ Requires: `cl-tibble`, `cl-tidyselect`, `cl-vctrs-lite`, `cl-ppcre`,
 ## License
 
 MIT
+
+For example, `(pivot-longer df '(:to :x1 :x3))` selects an inclusive
+column range. A standalone quoted helper call such as
+`'(cl-tidyselect:starts-with "x")` also works, as do established selector
+lists and helper thunks. :C, :UNION, :& and complement share dplyr's
+selection rules. Predicates can inspect the actual frame through
+`cl-tidyselect:peek-data`. Renaming remains prohibited in reshape contexts.

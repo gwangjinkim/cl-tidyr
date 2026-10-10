@@ -2,12 +2,20 @@
 
 (defun select-cols (data cols)
   "Select columns with shared tidyselect rules, preserving empty schemas.
-For a helper requiring context, pass a zero-argument function that calls it."
+For a helper requiring context, pass a zero-argument function that calls it.
+Quoted TS2 operators/helper calls are accepted alone or in a selector list."
   (cl-tidyselect:with-selection-context
       ((cl-tibble:tbl-names data)
        (map 'list (lambda (name) (cl-tibble:tbl-col data name))
-            (cl-tibble:tbl-names data)))
-    (let* ((selectors (if (listp cols) cols (list cols)))
+            (cl-tibble:tbl-names data))
+       data)
+    (let* ((expression-p (cl-tidyselect::selection-op-p cols
+                           "TO" "C" "&" "AND" "INTERSECTION" "|" "OR" "UNION"
+                           "!" "NOT" "EXCLUDE" "-" "AS" "QUOTE" "DATA" "ENV"
+                           "STARTS-WITH" "ENDS-WITH" "CONTAINS" "MATCHES"
+                           "NUM-RANGE" "EVERYTHING" "LAST-COL" "ALL-OF"
+                           "ANY-OF" "ONE-OF" "WHERE"))
+           (selectors (if (and (listp cols) (not expression-p)) cols (list cols)))
            (evaluated (mapcar (lambda (selector)
                                (if (functionp selector) (funcall selector) selector))
                              selectors)))
