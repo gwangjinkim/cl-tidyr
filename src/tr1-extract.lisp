@@ -1,0 +1,111 @@
+(in-package #:cl-tidyr)
+
+(defun %tr-captures (strings pattern)
+  "Capture through tidyselect's independently pinned PCRE2 handle; never R."
+  (unless (and (stringp pattern) (not (find (code-char 0) pattern)))
+    (%tr-error "Regex must be a string without NUL."))
+  (cl-tidyselect::ensure-pcre2)
+  (cffi:with-foreign-objects ((error-code :int) (error-offset :size) (count :uint32))
+    (cffi:with-foreign-string ((bytes byte-count) pattern :encoding :utf-8)
+      (let* ((utf (or (some (lambda (c) (> (char-code c) 127)) pattern)
+                      (some (lambda (s) (and (stringp s) (some (lambda (c) (> (char-code c) 127)) s))) strings)))
+             (code (cl-tidyselect::pcre2-compile bytes (1- byte-count) (if utf #x80000 0)
+                                                error-code error-offset (cffi:null-pointer))))
+        (when (cffi:null-pointer-p code)
+          (%tr-error "Invalid Perl regex: ~A." (cl-tidyselect::pcre2-message (cffi:mem-ref error-code :int))))
+        (unwind-protect
+             (progn
+               (unless (zerop (cl-tidyselect::pcre2-call "pattern_info" :pointer code :uint32 4 :pointer count :int))
+                 (%tr-error "Unable to inspect regex captures."))
+               (let* ((n (cffi:mem-ref count :uint32))
+                      (data (cl-tidyselect::pcre2-match-data-create code (cffi:null-pointer))))
+                 (when (cffi:null-pointer-p data) (%tr-error "Unable to allocate regex match data."))
+                 (unwind-protect
+                      (values
+                       (mapcar (lambda (string)
+                                 (if (na-p string) (make-list n :initial-element *na*)
+                                     (progn
+                                       (when (find (code-char 0) string) (%tr-error "Input strings cannot contain NUL."))
+                                       (cffi:with-foreign-string ((subject length) string :encoding :utf-8)
+                                         (let ((rc (cl-tidyselect::pcre2-match code subject (1- length) 0 0 data (cffi:null-pointer))))
+                                           (cond
+                                             ((>= rc 0)
+                                              (let ((ovector (cl-tidyselect::pcre2-call "get_ovector_pointer" :pointer data :pointer)))
+                                                (loop for group from 1 to n
+                                                      for start = (cffi:mem-aref ovector :size (* 2 group))
+                                                      for end = (cffi:mem-aref ovector :size (1+ (* 2 group)))
+                                                      collect (if (> start (1- length)) ""
+                                                                  (cffi:foreign-string-to-lisp (cffi:inc-pointer subject start)
+                                                                                               :count (- end start) :encoding :utf-8)))))
+                                             ((= rc -1) (make-list n :initial-element *na*))
+                                             (t (warn 'tidyr-warning :message (format nil "PCRE matching failed: ~A." (cl-tidyselect::pcre2-message rc)))
+                                                (make-list n :initial-element *na*)))))))) strings)
+                       n)
+                   (cl-tidyselect::pcre2-match-data-free data))))
+          (cl-tidyselect::pcre2-code-free code))))))
+(defun %tr-character (x)
+  (cond ((na-p x) *na*) ((stringp x) x) ((eq x t) "TRUE") ((null x) "FALSE")
+        ((numberp x) (cl-tibble::%tb-character x))
+        (t (%tr-error "Cannot extract regex groups from this column value: ~S." x))))
+(defun %tr-decimal (text)
+  ;; Strict grammar first, then manual decimal arithmetic. No Lisp reader/eval.
+  (unless (cl-ppcre:scan "^[+-]?(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+)(?:[eE][+-]?[0-9]+)?$" text)
+    (return-from %tr-decimal nil))
+  (let* ((sign (if (char= (char text 0) #\-) -1 1))
+         (start (if (find (char text 0) "+-") 1 0))
+         (e (position-if (lambda (c) (find c "eE")) text))
+         (mantissa (subseq text start e)) (dot (position #\. mantissa))
+         (digits (remove #\. mantissa))
+         (power (- (if e (parse-integer text :start (1+ e)) 0)
+                   (if dot (- (length mantissa) dot 1) 0))))
+    (* sign (parse-integer digits) (expt 10 power))))
+(defun %tr-convert (column)
+  (let* ((strings (col->list column))
+         (trimmed (mapcar (lambda (x) (if (na-p x) x (string-trim '(#\Space #\Tab #\Newline #\Return) x))) strings))
+         (present (remove-if (lambda (x) (or (na-p x) (member x '("" "NA") :test #'equal))) trimmed)))
+    (labels ((missing (x) (or (na-p x) (member x '("" "NA") :test #'equal))))
+      (cond
+        ((every (lambda (x) (member x '("TRUE" "FALSE" "T" "F") :test #'equal)) present)
+         (make-typed-column (coerce (mapcar (lambda (x) (if (missing x) *na* (not (null (member x '("TRUE" "T") :test #'equal))))) trimmed) 'vector) :bool))
+        ((every (lambda (x) (and (cl-ppcre:scan "^[+-]?[0-9]+$" x)
+                                (<= -2147483647 (parse-integer x) 2147483647))) present)
+         (make-typed-column (coerce (mapcar (lambda (x) (if (missing x) *na* (parse-integer x))) trimmed) 'vector) :int))
+        ((every #'%tr-decimal present)
+         (make-typed-column (coerce (mapcar (lambda (x) (if (missing x) *na* (coerce (%tr-decimal x) 'double-float))) trimmed) 'vector) :double))
+        (t (make-typed-column (coerce (mapcar (lambda (x) (if (or (na-p x) (equal x "NA")) *na* x)) strings) 'vector) :string))))))
+(defun extract (data col into &key (regex "([[:alnum:]]+)") (remove t) convert)
+  "R: tidyr::extract(). Extract PCRE capture groups into character columns.
+COL accepts one tidyselect column. INTO is a string/list/vector of names;
+*NA* omits a capture and repeated names concatenate groups. Missing input
+or a failed whole match yields NA; an unmatched optional group is empty.
+:CONVERT supports ordinary logical, integer and decimal numeric columns."
+  (when (%tr-grouped-p data)
+    (return-from extract (%tr-regroup (extract (%tr-group-data data) col into :regex regex :remove remove :convert convert)
+                                    (%tr-group-keys data))))
+  (let* ((selected (%tr-selected-names data col))
+         (source (first selected))
+         (into (cond ((stringp into) (list into)) ((or (listp into) (vectorp into)) (coerce into 'list))
+                     (t (%tr-error "INTO must contain column names or NA.")))))
+    (unless (= 1 (length selected)) (%tr-error "Extract requires exactly one input column."))
+    (dolist (name into) (unless (or (stringp name) (and (symbolp name) name) (na-p name))
+                         (%tr-error "INTO must contain names or NA.")))
+    (multiple-value-bind (rows count) (%tr-captures (mapcar #'%tr-character (col->list (%tr-data-column data source))) regex)
+      (unless (= count (length into)) (%tr-error "Expected ~D capture groups, found ~D." (length into) count))
+      (let* ((new-names (remove-duplicates (loop for name in into unless (na-p name) collect (%tr-name name)) :test #'equal :from-end t))
+             (new-columns
+               (mapcar (lambda (name)
+                         (let ((column (make-typed-column
+                                        (coerce (loop for row in rows collect
+                                                      (let ((pieces (loop for target in into for piece in row
+                                                                          when (and (not (na-p target)) (equal name (%tr-name target))) collect piece)))
+                                                        (if (some #'na-p pieces) *na* (apply #'concatenate 'string pieces)))) 'vector) :string)))
+                           (if convert (%tr-convert column) column))) new-names))
+             (names nil) (columns nil))
+        (loop for name across (cl-tibble:tbl-names data)
+              do (when (equal name source)
+                   (unless (or remove (member name new-names :test #'equal))
+                     (push name names) (push (%tr-data-column data name) columns))
+                   (loop for new in new-names for column in new-columns do (push new names) (push column columns)))
+                 (unless (or (equal name source) (member name new-names :test #'equal))
+                   (push name names) (push (%tr-data-column data name) columns)))
+        (%tr-frame (nreverse names) (nreverse columns) (cl-tibble:tbl-nrows data))))))

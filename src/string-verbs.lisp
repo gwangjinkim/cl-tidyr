@@ -48,10 +48,8 @@ Quoted TS2 operators/helper calls are accepted alone or in a selector list."
     (values (nreverse cols) sep remove na-rm)))
 
 (defun get-nrow (df)
-  (let ((names (cl-tibble:tbl-names df)))
-    (if (> (length names) 0)
-        (length (cl-tibble:tbl-col df (elt names 0)))
-        0)))
+  "Return the stored row count, including zero-column and owner-column frames."
+  (cl-tibble:tbl-nrows df))
 
 (defun unite (data col &rest args)
   "Unites multiple columns into one by pasting them together."

@@ -123,7 +123,10 @@ The reshaping algorithms' remaining parity work stays in TR1–TR5.
 
 `cl-tidyr` is built on `cl-vctrs-lite`. To ensure robust performance:
 
-1. **Detection**: Use `(is-missing-p val)` to check for mission values. It correctly identifies both Lisp `nil` and the ecosystem-specific `*na*`.
+1. **Detection**: TR1 helpers use column types: logical NIL is FALSE,
+   list-cell NIL is NULL, and atomic NA/NaN are missing. The internal legacy
+   `is-missing-p` helper remains for older reshape code; use explicit typed
+   columns for the C1 contract.
 2. **Production**: Functions like `complete` and `pivot-wider` will produce `*na*` by default for missing cells.
 
 ---
@@ -155,7 +158,8 @@ The reshaping algorithms' remaining parity work stays in TR1–TR5.
 ```
 
 Requires: `cl-tibble`, `cl-tidyselect`, `cl-vctrs-lite`, `cl-ppcre`,
-`alexandria`, and `serapeum`.
+`alexandria`, `serapeum`, `cffi` and `local-time`; TR1 character sorting
+also requires independent ICU 76.1 (see below).
 
 ## License
 
@@ -167,3 +171,72 @@ column range. A standalone quoted helper call such as
 lists and helper thunks. :C, :UNION, :& and complement share dplyr's
 selection rules. Predicates can inspect the actual frame through
 `cl-tidyselect:peek-data`. Renaming remains prohibited in reshape contexts.
+
+## Missing values and expansion (TR1)
+
+| R | Common Lisp |
+|---|---|
+| `drop_na`, `replace_na` | `drop-na`, `replace-na` |
+| `fill` | `.fill` (variadic selectors), `fill` (existing callable form) |
+| `expand_grid`, `crossing`, `nesting` | `expand-grid`, `crossing`, `nesting` |
+| `expand`, `complete` | `expand`, `complete` |
+| `full_seq`, `uncount` | `full-seq`, `uncount` |
+| `extract` | `extract` (superseded R API) |
+
+Typed atomic/factor/date/list columns retain prototypes through empty results,
+replication, completion and replacement. Scalar NIL is FALSE at public scalar
+argument boundaries; list-cell NIL is NULL. Atomic NA and IEEE NaN are missing.
+Untyped legacy numeric/string columns containing NIL keep their old missing
+interpretation. Typed columns avoid that ambiguity. Existing CL:FILL calls on
+ordinary sequences remain available.
+
+```lisp
+(cl-tidyr:expand-grid :x #(1 2) :y #("a" "b") :vary :fastest)
+(cl-tidyr:crossing :x #(2 1 2) :y #("b" "a"))
+(cl-tidyr:nesting :x #(1 1 2) :y #("a" "a" "b"))
+(cl-tidyr:.fill df :x :y :direction :downup :by :group)
+(cl-tidyr:complete df :x :y '(:options :fill (:value 0) :explicit nil))
+(cl-tidyr:expand df '(:nesting :item :item_id) '(:as :year #(2024 2025)))
+(cl-tidyr:uncount df :n :id "repeat")
+```
+
+Grid inputs use flat name/value pairs. `:name-repair` accepts the tibble repair
+strategies; string keys disambiguate columns named vary/name-repair. `expand`
+and `complete` preserve existing column-name calls. Computed expansion values
+can be callbacks receiving the current input frame. Completion retains
+original duplicate rows; `:explicit nil` replaces missing cells only in new
+rows. Use `(:options ...)` controls when a column resembles an option.
+
+`.fill` supports down/up/downup/updown and shared tidyselect selectors, with
+helper thunks called in selection context. Its empty selection is unchanged.
+`replace-na` accepts named table replacements, or a scalar replacement for a
+vector, and rejects lossy casts. `uncount` accepts a named weight column,
+scalar/vector or callback; grouped callbacks run per group, with original row
+order retained. Its ID values are repetition counters 1..n for each source
+row. `full-seq` checks absolute tolerance and preserves numeric, Date and the
+shared UTC datetime representation, including tested fractional seconds.
+
+Character expansion values use independent ICU 76.1 root collation, matching
+the pinned R environment. Group-key blocks retain dplyr's C ordering. Regex
+extraction uses the already pinned native PCRE2 10.47 engine. Missing or
+incompatible libraries error; native functions never launch R or load libR.
+The existing stringr ICU 71.1 engine remains separate.
+
+For another machine, provide independent ICU 76.1 with
+`CL_TIDYR_ICU_LIBRARY`, or run `scripts/bootstrap-icu.sh`. The script verifies
+the source checksum and builds in the foreground; artifacts stay under
+`.native/`. The current macOS Homebrew runtime was tested. The source-build
+fallback passed shell syntax checks but was not executed, and Linux remains
+unverified. ICU uses the Unicode-3.0 license; PCRE2 uses BSD-3-Clause.
+
+TR1 is still partial. Packed matrix/frame columns need a shared C2 owner
+extension; full expression-generated naming/splicing, base R `type.convert`
+hex/complex/nonfinite breadth and some character coercions remain incomplete.
+Explicit `:by nil` on grouped `.fill` currently differs from R's `.by=NULL`.
+Foreign timezone attributes and precision beyond the shared nanosecond UTC
+model are not represented. Later reshape milestones and existing public
+migration proposals retain their gates.
+
+Validation for this continuation: 141 native tidyr checks and 137 new R
+conformance cases pass. The full ecosystem run passes 3832 checks and 2820
+R cases; all 56 golden topics regenerate byte-identically.

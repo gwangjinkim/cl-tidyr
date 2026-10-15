@@ -7,6 +7,8 @@
                :cl-tibble
                :cl-vctrs-lite
                :cl-ppcre
+               :cffi
+               :local-time
                :alexandria
                :serapeum)
   :components ((:module "src"
@@ -14,8 +16,12 @@
                 ((:file "packages")
                  (:file "string-verbs" :depends-on ("packages"))
                  (:file "pivoting" :depends-on ("packages" "string-verbs"))
-                 (:file "missing-values" :depends-on ("packages"))
-                 (:file "rectification" :depends-on ("packages" "missing-values"))
+                 (:file "tr1-core" :depends-on ("packages" "string-verbs"))
+                 (:file "tr1-collation" :depends-on ("packages" "tr1-core"))
+                 (:file "missing-values" :depends-on ("packages" "tr1-core"))
+                 (:file "tr1-vectors" :depends-on ("packages" "tr1-core"))
+                 (:file "tr1-extract" :depends-on ("packages" "tr1-core"))
+                 (:file "rectification" :depends-on ("packages" "missing-values" "tr1-collation"))
                  (:file "nesting" :depends-on ("packages" "missing-values"))
                  (:file "dsl" :depends-on ("packages")))))
   :in-order-to ((test-op (test-op "cl-tidyr/tests"))))

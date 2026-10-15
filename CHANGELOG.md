@@ -7,6 +7,11 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- `parity-TR1`: Add `expand-grid`, `crossing`, `nesting`, `extract`,
+  `full-seq`, `uncount` and variadic `.fill`, with typed empty results,
+  factors/dates/list columns, grouping and shared selection support.
+  Independent ICU 76.1 root collation and pinned PCRE2 10.47 captures match
+  the pinned reference environment without invoking R at runtime.
 - `parity-TS2-adapters`: pivot/unite selection accepts quoted native
   operator and helper expressions, alone or in established selector lists.
 
@@ -20,6 +25,11 @@ All notable changes to this project are documented here. Format follows
   shadowing is transparent (topic: CL shadowing).
 
 ### Fixed
+- `parity-TR1`: Preserve duplicate rows in completion and owner prototypes
+  in missing-value/expansion results; support all four fill directions,
+  actual IEEE NaN, logical FALSE and list NULL distinctly. Keep callable
+  `fill`, CL:FILL delegation and existing column names resembling options.
+  Packed matrix/frame columns and full extraction conversion remain partial.
 - **cl-tidyr did not load at all**: `no symbol named "SELECT" in
   "CL-DPLYR"`. cl-dplyr renamed its verbs to `.select` etc. (cl-dplyr
   commit 9c62711), and `.select` is a macro, so it cannot be `apply`ed.
@@ -56,6 +66,12 @@ All notable changes to this project are documented here. Format follows
   remain in history (topic: repo hygiene).
 
 ### Tests
+- `parity-TR1`: Native suite grows from 90 to 141 passing checks; all 137
+  new R cases pass, including empty/grouped outputs, Unicode captures,
+  collation, lossless replacement and NaN. Full ecosystem verification is
+  3832 checks and 2820 R cases, all passing; all 56 golden topics reproduce.
+  Wrong/missing ICU rejection and loader recovery pass on macOS; bootstrap
+  source build and Linux remain unverified.
 - `parity-TS2-adapters`: R comparisons and integration regressions cover
   quoted ranges/helpers, owner preservation and prohibited aliases.
 

@@ -22,6 +22,15 @@
            #:drop-na
            #:replace-na
            #:fill
+           #:.fill
+           #:expand-grid
+           #:crossing
+           #:nesting
+           #:full-seq
+           #:uncount
+           #:extract
+           #:tidyr-error
+           #:tidyr-warning
            #:expand
            #:complete
            #:nest
